@@ -3,6 +3,8 @@ import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-d
 import { AuthProvider, useAuth } from './contexts/AuthContext';
 import LoginPage from './pages/LoginPage';
 import DashboardPage from './pages/DashboardPage';
+import Header from './components/Header';
+import TransactionPage from './components/transaction/TransactionPage';
 
 const ProtectedRoute: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const { isAuthenticated, loading } = useAuth();
@@ -22,6 +24,7 @@ const App: React.FC = () => {
   return (
     <AuthProvider>
       <Router>
+        <Header/>
         <Routes>
           <Route path="/login" element={<LoginPage />} />
           <Route 
@@ -33,6 +36,7 @@ const App: React.FC = () => {
             } 
           />
           <Route path="*" element={<Navigate to="/" />} />
+          <Route path="/transaction" element ={<TransactionPage/>}/>
         </Routes>
       </Router>
     </AuthProvider>

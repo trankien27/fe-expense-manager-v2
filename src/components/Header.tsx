@@ -2,17 +2,22 @@
 import React from "react";
 import { useAuth } from "../contexts/AuthContext";
 import '../assets/Header.css'
+import { useNavigate } from "react-router-dom";
 
 export default function Header() {
   const { logout } = useAuth();
+  const navigate = useNavigate();
    const [isMenuOpen, setIsMenuOpen] = React.useState(false);
+   const hanldeDashBoard = () =>{
+    navigate("/")
+   }
 
-      const toggleMenu = () => {
-        setIsMenuOpen(!isMenuOpen);
-      };
+    //   const toggleMenu = () => {
+    //     setIsMenuOpen(!isMenuOpen);
+    //   };
 
   return (
-<header className="header-bg sticky top-5 z-50">
+<header className="header-bg top-5 z-50">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             <div className="flex items-center h-16">
                 <div className="flex items-center space-x-3">
@@ -28,23 +33,23 @@ export default function Header() {
 
     
                 <nav className="hidden md:flex items-center space-x-8 mr-8">
-                    <a href="#dashboard" className="text-xl nav-item active text-gray-700 hover:text-indigo-600 px-3 py-2 text-sm font-medium">
+                    <a className="text-xl nav-item active text-gray-700 hover:text-indigo-600 px-3 py-2 text-sm font-medium" onClick={hanldeDashBoard}>
                         Dashboard
                     </a>
-                    <a href="#transactions" className="text-xl nav-item text-gray-700 hover:text-indigo-600 px-3 py-2 text-sm font-medium">
+                    <a className="text-xl nav-item text-gray-700 hover:text-indigo-600 px-3 py-2 text-sm font-medium" onClick={()=> navigate("/transaction")}>
                         Giao dịch
                     </a>
-                    <a href="#reports" className="text-xl nav-item text-gray-700 hover:text-indigo-600 px-3 py-2 text-sm font-medium">
+                    <a className="text-xl nav-item text-gray-700 hover:text-indigo-600 px-3 py-2 text-sm font-medium">
                         Báo cáo
                     </a>
-                    <a href="#settings" className="text-xl nav-item text-gray-700 hover:text-indigo-600 px-3 py-2 text-sm font-medium">
+                    <a className="text-xl nav-item text-gray-700 hover:text-indigo-600 px-3 py-2 text-sm font-medium">
                         Cài đặt
                     </a>
                 </nav>
 
 
                 <div className="flex items-center">
-                    <button className="logout-btn text-white px-4 py-2 rounded-lg text-sm font-medium shadow-md">
+                    <button className="logout-btn text-white px-4 py-2 rounded-lg text-sm font-medium shadow-md" onClick={logout}>
                         <svg className="w-4 h-4 inline-block mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"></path>
                         </svg>
