@@ -40,7 +40,7 @@ const UpdateTransactionModal: React.FC<UpdateTransactionModalProps> = ({
   const fetchWallets = async () => {
     try {
       const res = await axiosInstance.get('/wallets');
-      setWallets(res.data || []);
+      setWallets(res.data.items || []);
     } catch (err) {
       console.error('Error fetching wallets:', err);
     }
@@ -49,7 +49,7 @@ const UpdateTransactionModal: React.FC<UpdateTransactionModalProps> = ({
   const fetchCategories = async () => {
     try {
       const res = await axiosInstance.get('/categories');
-      setCategories(res.data || []);
+      setCategories(res.data.items || []);
     } catch (err) {
       console.error('Error fetching categories:', err);
     }
@@ -98,7 +98,7 @@ const UpdateTransactionModal: React.FC<UpdateTransactionModalProps> = ({
           <div>
             <label className="block text-sm font-medium mb-1">Danh mục</label>
             <SearchableSelect
-                
+
               options={categories.map((c) => ({ id: c.id, label: c.name }))}
               value={categoryId}
               onChange={(val) => setCategoryId(val)}
