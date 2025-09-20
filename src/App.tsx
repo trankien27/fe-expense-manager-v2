@@ -5,6 +5,7 @@ import LoginPage from './pages/LoginPage';
 import DashboardPage from './pages/DashboardPage';
 import Header from './components/Header';
 import TransactionPage from './components/transaction/TransactionPage';
+import WalletPage from './components/wallet/WalletPage';
 
 const ProtectedRoute: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const { isAuthenticated, loading } = useAuth();
@@ -37,6 +38,7 @@ const App: React.FC = () => {
           />
           <Route path="*" element={<Navigate to="/" />} />
           <Route path="/transaction" element ={<TransactionPage/>}/>
+          <Route path="/wallets" element ={<WalletPage/>}/>'
         </Routes>
       </Router>
     </AuthProvider>

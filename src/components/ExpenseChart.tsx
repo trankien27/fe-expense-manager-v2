@@ -33,38 +33,40 @@ const ExpenseCharts: React.FC = () => {
     fetchTransactions();
   }, []);
 
-  const fetchTransactions = async () => {
-    try {
-      const currentDate = new Date();
-      const startOfMonth = new Date(
-        currentDate.getFullYear(),
-        currentDate.getMonth(),
-        1
-      );
-      const endOfMonth = new Date(
-        currentDate.getFullYear(),
-        currentDate.getMonth() + 1,
-        0
-      );
+const fetchTransactions = async () => {
+  try {
+    const currentDate = new Date();
+    const startOfMonth = new Date(
+      currentDate.getFullYear(),
+      currentDate.getMonth(),
+      1
+    );
+    const endOfMonth = new Date(
+      currentDate.getFullYear(),
+      currentDate.getMonth() + 1,
+      0
+    );
 
-      const response = await axiosInstance.get<Transaction[]>(
-        "/transactions/my-transactions?page=1&pageSize=1000"
+    const response = await axiosInstance.get(
+      "/transactions/my-transactions?page=0&pageSize=1000"
+    );
+
+    const allTransactions: Transaction[] = response.data.items || [];
+
+    const transactions = allTransactions.filter((transaction) => {
+      const transactionDate = new Date(transaction.occurredAt);
+      return (
+        transactionDate >= startOfMonth &&
+        transactionDate <= endOfMonth &&
+        transaction.amount < 0
       );
+    });
 
-      const transactions = response.data.filter((transaction) => {
-        const transactionDate = new Date(transaction.occurredAt);
-        return (
-          transactionDate >= startOfMonth &&
-          transactionDate <= endOfMonth &&
-          transaction.amount < 0
-        );
-      });
-
-      if (transactions.length === 0) {
-        setError("Chưa có dữ liệu chi tiêu trong tháng này");
-        setLoading(false);
-        return;
-      }
+    if (transactions.length === 0) {
+      setError("Chưa có dữ liệu chi tiêu trong tháng này");
+      setLoading(false);
+      return;
+    }
 
       // ----- Pie chart (theo danh mục) -----
       const categoryExpenses = transactions.reduce(

@@ -43,3 +43,16 @@ export interface MonthlyBalance {
   totalExpense: number;
   net: number;
 }
+export interface Wallet {
+  id: string;
+  name: string;
+  icon: string;
+  currency: string;
+}
+
+export interface Category {
+  id: string;
+  name: string;
+  icon: string;
+  type: number; // 0 = Expense, 1 = Income
+}

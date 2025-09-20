@@ -1,21 +1,20 @@
 import React, { useEffect, useState } from 'react';
-import type { Category, Wallet } from '../../types';
+import type { Category, Wallet, Transaction } from '../../types';
 import axiosInstance from '../../services/axiosInstance';
 import SearchableSelect from '../common/SearchableSelect';
 
-interface AddTransactionModalProps {
+interface UpdateTransactionModalProps {
   isOpen: boolean;
   onClose: () => void;
   onSuccess: () => void;
+  transaction: Transaction | null; // giao dịch cần sửa
 }
 
-const DEFAULT_ICON = 'default-icon';
-const DEFAULT_TYPE = 0;
-
-const AddTransactionModal: React.FC<AddTransactionModalProps> = ({
+const UpdateTransactionModal: React.FC<UpdateTransactionModalProps> = ({
   isOpen,
   onClose,
   onSuccess,
+  transaction,
 }) => {
   const [wallets, setWallets] = useState<Wallet[]>([]);
   const [categories, setCategories] = useState<Category[]>([]);
@@ -26,14 +25,17 @@ const AddTransactionModal: React.FC<AddTransactionModalProps> = ({
   const [occurredAt, setOccurredAt] = useState('');
   const [loading, setLoading] = useState(false);
 
-  // Load wallets + categories khi mở modal
   useEffect(() => {
     if (isOpen) {
-      resetForm();
       fetchWallets();
       fetchCategories();
+      if (transaction) {
+        setAmount(transaction.amount);
+        setNote(transaction.note || '');
+        setOccurredAt(transaction.occurredAt || '');
+      }
     }
-  }, [isOpen]);
+  }, [isOpen, transaction]);
 
   const fetchWallets = async () => {
     try {
@@ -55,61 +57,53 @@ const AddTransactionModal: React.FC<AddTransactionModalProps> = ({
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (!transaction) return;
     setLoading(true);
-
     try {
-      await axiosInstance.post('/transactions', {
+      await axiosInstance.put(`/transactions/${transaction.id}`, {
         walletId,
         categoryId,
         amount,
         note,
         occurredAt,
       });
-
       onSuccess();
-      onClose(); // chỉ đóng, không reset ngay
+      onClose();
     } catch (err) {
-      console.error('Error adding transaction:', err);
+      console.error('Error updating transaction:', err);
     } finally {
       setLoading(false);
     }
   };
 
-  const resetForm = () => {
-    setWalletId('');
-    setCategoryId('');
-    setAmount(0);
-    setNote('');
-    setOccurredAt('');
-  };
-
-  if (!isOpen) return null;
+  if (!isOpen || !transaction) return null;
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40">
       <div className="bg-white rounded-xl shadow-lg w-full max-w-lg p-6">
-        <h2 className="text-xl font-semibold mb-4">Thêm Giao Dịch</h2>
+        <h2 className="text-xl font-semibold mb-4">Cập nhật Giao Dịch</h2>
         <form onSubmit={handleSubmit} className="space-y-4">
           {/* Wallet */}
           <div>
             <label className="block text-sm font-medium mb-1">Ví</label>
-<SearchableSelect
-  options={wallets.map((w) => ({ id: w.id, label: w.name }))}
-  value={walletId}
-  onChange={(val) => setWalletId(val)}
-  placeholder="Chọn ví..."
-/>
+            <SearchableSelect
+              options={wallets.map((w) => ({ id: w.id, label: w.name }))}
+              value={walletId}
+              onChange={(val) => setWalletId(val)}
+              placeholder="Chọn ví..."
+            />
           </div>
 
           {/* Category */}
           <div>
             <label className="block text-sm font-medium mb-1">Danh mục</label>
-<SearchableSelect
-  options={categories.map((c) => ({ id: c.id, label: c.name }))}
-  value={categoryId}
-  onChange={(val) => setCategoryId(val)}
-  placeholder="Chọn danh mục..."
-/>
+            <SearchableSelect
+                
+              options={categories.map((c) => ({ id: c.id, label: c.name }))}
+              value={categoryId}
+              onChange={(val) => setCategoryId(val)}
+              placeholder="Chọn danh mục..."
+            />
           </div>
 
           {/* Amount */}
@@ -136,6 +130,7 @@ const AddTransactionModal: React.FC<AddTransactionModalProps> = ({
               placeholder="Nhập ghi chú..."
             />
           </div>
+
           {/* Actions */}
           <div className="flex justify-end gap-3 mt-6">
             <button
@@ -150,7 +145,7 @@ const AddTransactionModal: React.FC<AddTransactionModalProps> = ({
               disabled={loading}
               className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg disabled:opacity-50"
             >
-              {loading ? 'Đang lưu...' : 'Lưu'}
+              {loading ? 'Đang lưu...' : 'Cập nhật'}
             </button>
           </div>
         </form>
@@ -159,4 +154,4 @@ const AddTransactionModal: React.FC<AddTransactionModalProps> = ({
   );
 };
 
-export default AddTransactionModal;
+export default UpdateTransactionModal;
