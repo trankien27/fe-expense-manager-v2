@@ -21,7 +21,7 @@ const AddTransactionModal: React.FC<AddTransactionModalProps> = ({
   const [categories, setCategories] = useState<Category[]>([]);
   const [walletId, setWalletId] = useState('');
   const [categoryId, setCategoryId] = useState('');
-  const [amount, setAmount] = useState<number>(0);
+  const [amount, setAmount] = useState<string>('');
   const [note, setNote] = useState('');
   const [occurredAt, setOccurredAt] = useState('');
   const [loading, setLoading] = useState(false);
@@ -59,13 +59,13 @@ const AddTransactionModal: React.FC<AddTransactionModalProps> = ({
     setLoading(true);
 
     try {
-      await axiosInstance.post('/transactions', {
-        walletId,
-        categoryId,
-        amount,
-        note,
-        occurredAt,
-      });
+await axiosInstance.post('/transactions', {
+  walletId,
+  categoryId,
+  amount: Number(amount.replace(/\./g, '')),
+  note,
+  occurredAt: new Date(occurredAt).toISOString(),
+});
 
       onSuccess();
       onClose(); // chỉ đóng, không reset ngay
@@ -75,15 +75,19 @@ const AddTransactionModal: React.FC<AddTransactionModalProps> = ({
       setLoading(false);
     }
   };
+    const formatMoney = (value: string) => {
+    if (!value) return "";
+    return value.replace(/\B(?=(\d{3})+(?!\d))/g, ".");
+  };
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     // Chỉ giữ lại ký tự số
     const value = e.target.value.replace(/\D/g, "");
-    setAmount(value === "" ? 0 : parseInt(value, 10));
+    setAmount(formatMoney(value));
   };
   const resetForm = () => {
     setWalletId('');
     setCategoryId('');
-    setAmount(0);
+    setAmount('');
     setNote('');
     setOccurredAt('');
   };
@@ -116,7 +120,16 @@ const AddTransactionModal: React.FC<AddTransactionModalProps> = ({
   placeholder="Chọn danh mục..."
 />
           </div>
-
+<div>
+  <label className="block text-sm font-medium mb-1">Ngày giao dịch</label>
+  <input
+    type="date"
+    value={occurredAt}
+    onChange={(e) => setOccurredAt(e.target.value)}
+    className="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500"
+    required
+  />
+</div>
           {/* Amount */}
  <div>
       <label className="block text-sm font-medium mb-1">Số tiền</label>
@@ -130,7 +143,7 @@ const AddTransactionModal: React.FC<AddTransactionModalProps> = ({
         placeholder="Nhập số tiền..."
         required
       />
-      {amount >0 && Number(amount) < 1000 && (
+      {amount !== '' && Number(amount.replace(/\./g, '')) > 0 && Number(amount.replace(/\./g, '')) < 1000 && (
         <p className="mt-1 text-sm text-red-500">
           Số tiền tối thiểu là 1.000 ₫
         </p>

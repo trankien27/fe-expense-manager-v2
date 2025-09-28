@@ -33,8 +33,8 @@ const ExpenseCharts: React.FC = () => {
   // Bộ lọc ngày
   const [fromDate, setFromDate] = useState("2025-01-01");
   const [toDate, setToDate] = useState(
-  new Date().toISOString().split("T")[0]
-);
+    new Date().toISOString().split("T")[0]
+  );
 
   useEffect(() => {
     if (fromDate && toDate) {
@@ -129,15 +129,15 @@ const ExpenseCharts: React.FC = () => {
         setPieIncomeData(null);
       }
 
-      // ----- Line chart (chi tiêu theo ngày + category) -----
-      if (expenseTransactions.length > 0) {
+      // ----- Line chart (thu nhập & chi tiêu theo ngày + category) -----
+      if (allTransactions.length > 0) {
         const categories = Array.from(
-          new Set(expenseTransactions.map((t) => t.categoryName))
+          new Set(allTransactions.map((t) => t.categoryName))
         );
 
         const dates = Array.from(
           new Set(
-            expenseTransactions.map((t) =>
+            allTransactions.map((t) =>
               new Date(t.occurredAt).toLocaleDateString("vi-VN")
             )
           )
@@ -148,22 +148,23 @@ const ExpenseCharts: React.FC = () => {
         );
 
         const colors = [
-          "#6366F1",
-          "#F43F5E",
-          "#22C55E",
-          "#EAB308",
-          "#0EA5E9",
-          "#A855F7",
+          "#22C55E", // xanh: income
+          "#EF4444", // đỏ: expense
+          "#3B82F6",
+          "#F59E0B",
+          "#8B5CF6",
+          "#14B8A6",
         ];
 
         const datasets = categories.map((category, idx) => {
           const data = dates.map((date) => {
-            const txs = expenseTransactions.filter(
+            const txs = allTransactions.filter(
               (t) =>
                 t.categoryName === category &&
                 new Date(t.occurredAt).toLocaleDateString("vi-VN") === date
             );
-            return txs.reduce((sum, t) => sum + Math.abs(t.amount), 0);
+            // Giữ nguyên: income > 0, expense < 0
+            return txs.reduce((sum, t) => sum + t.amount, 0);
           });
 
           return {
@@ -219,7 +220,28 @@ const ExpenseCharts: React.FC = () => {
 
   const lineOptions = {
     responsive: true,
-    plugins: { legend: { position: "bottom" as const } },
+    plugins: {
+      legend: { position: "bottom" as const },
+      tooltip: {
+        callbacks: {
+          label: (context: any) => {
+            const value = context.parsed.y;
+            const formatted = new Intl.NumberFormat("vi-VN", {
+              style: "currency",
+              currency: "VND",
+            }).format(Math.abs(value));
+
+            if (value > 0) {
+              return `+ Thu nhập (${context.dataset.label}): ${formatted}`;
+            } else if (value < 0) {
+              return `- Chi tiêu (${context.dataset.label}): ${formatted}`;
+            } else {
+              return `${context.dataset.label}: 0`;
+            }
+          },
+        },
+      },
+    },
     scales: {
       y: {
         beginAtZero: true,
@@ -323,14 +345,14 @@ const ExpenseCharts: React.FC = () => {
           {/* Line Chart */}
           <div className="bg-white p-6 rounded-lg shadow">
             <h3 className="text-lg font-semibold text-gray-900 mb-4">
-              Xu hướng chi tiêu (theo danh mục)
+              Xu hướng thu & chi (theo danh mục)
             </h3>
             <div className="h-64">
               {lineData ? (
                 <Line data={lineData} options={lineOptions} />
               ) : (
                 <p className="text-gray-500 text-center py-8">
-                  Chưa có dữ liệu chi tiêu
+                  Chưa có dữ liệu
                 </p>
               )}
             </div>
