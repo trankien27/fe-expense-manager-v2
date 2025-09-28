@@ -38,6 +38,7 @@ const AddTransactionModal: React.FC<AddTransactionModalProps> = ({
   const fetchWallets = async () => {
     try {
       const res = await axiosInstance.get('/wallets');
+      console.log(res.data);
       setWallets(res.data.items || []);
     } catch (err) {
       console.error('Error fetching wallets:', err);

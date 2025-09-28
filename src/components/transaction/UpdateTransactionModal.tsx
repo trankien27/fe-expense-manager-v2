@@ -98,7 +98,7 @@ const UpdateTransactionModal: React.FC<UpdateTransactionModalProps> = ({
           <div>
             <label className="block text-sm font-medium mb-1">Danh mục</label>
             <SearchableSelect
-                
+
               options={categories.map((c) => ({ id: c.id, label: c.name }))}
               value={categoryId}
               onChange={(val) => setCategoryId(val)}
