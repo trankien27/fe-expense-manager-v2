@@ -75,7 +75,11 @@ const AddTransactionModal: React.FC<AddTransactionModalProps> = ({
       setLoading(false);
     }
   };
-
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    // Chỉ giữ lại ký tự số
+    const value = e.target.value.replace(/\D/g, "");
+    setAmount(value === "" ? 0 : parseInt(value, 10));
+  };
   const resetForm = () => {
     setWalletId('');
     setCategoryId('');
@@ -114,17 +118,24 @@ const AddTransactionModal: React.FC<AddTransactionModalProps> = ({
           </div>
 
           {/* Amount */}
-          <div>
-            <label className="block text-sm font-medium mb-1">Số tiền</label>
-            <input
-              type="number"
-              value={amount}
-              onChange={(e) => setAmount(Number(e.target.value))}
-              className="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500"
-              placeholder="Nhập số tiền..."
-              required
-            />
-          </div>
+ <div>
+      <label className="block text-sm font-medium mb-1">Số tiền</label>
+      <input
+        type="text"
+        inputMode="numeric"
+        pattern="[0-9]*"
+        value={amount}
+        onChange={handleChange}
+        className="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500"
+        placeholder="Nhập số tiền..."
+        required
+      />
+      {amount >0 && Number(amount) < 1000 && (
+        <p className="mt-1 text-sm text-red-500">
+          Số tiền tối thiểu là 1.000 ₫
+        </p>
+      )}
+    </div>
 
           {/* Note */}
           <div>

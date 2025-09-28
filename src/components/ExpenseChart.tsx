@@ -24,107 +24,170 @@ ChartJS.register(
 );
 
 const ExpenseCharts: React.FC = () => {
-  const [pieData, setPieData] = useState<any>(null);
+  const [pieExpenseData, setPieExpenseData] = useState<any>(null);
+  const [pieIncomeData, setPieIncomeData] = useState<any>(null);
   const [lineData, setLineData] = useState<any>(null);
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string>("");
 
+  // Bộ lọc ngày
+  const [fromDate, setFromDate] = useState("2025-01-01");
+  const [toDate, setToDate] = useState(
+  new Date().toISOString().split("T")[0]
+);
+
   useEffect(() => {
-    fetchTransactions();
-  }, []);
-
-const fetchTransactions = async () => {
-  try {
-    const currentDate = new Date();
-    const startOfMonth = new Date(
-      currentDate.getFullYear(),
-      currentDate.getMonth(),
-      1
-    );
-    const endOfMonth = new Date(
-      currentDate.getFullYear(),
-      currentDate.getMonth() + 1,
-      0
-    );
-
-    const response = await axiosInstance.get(
-      "/transactions/my-transactions?page=0&pageSize=1000"
-    );
-
-    const allTransactions: Transaction[] = response.data.items || [];
-
-    const transactions = allTransactions.filter((transaction) => {
-      const transactionDate = new Date(transaction.occurredAt);
-      return (
-        transactionDate >= startOfMonth &&
-        transactionDate <= endOfMonth &&
-        transaction.amount < 0
-      );
-    });
-
-    if (transactions.length === 0) {
-      setError("Chưa có dữ liệu chi tiêu trong tháng này");
-      setLoading(false);
-      return;
+    if (fromDate && toDate) {
+      fetchTransactions(fromDate, toDate);
     }
+  }, [fromDate, toDate]);
 
-      // ----- Pie chart (theo danh mục) -----
-      const categoryExpenses = transactions.reduce(
-        (acc: { [key: string]: number }, transaction) => {
-          const category = transaction.categoryName;
-          const amount = Math.abs(transaction.amount);
-          acc[category] = (acc[category] || 0) + amount;
-          return acc;
-        },
-        {}
+  const fetchTransactions = async (from: string, to: string) => {
+    try {
+      setLoading(true);
+      setError("");
+
+      const response = await axiosInstance.get(
+        `/transactions/my-transactions?from=${from}&to=${to}`
       );
 
-      const pie = {
-        labels: Object.keys(categoryExpenses),
-        datasets: [
-          {
-            data: Object.values(categoryExpenses),
-            backgroundColor: [
-              "#FF6384",
-              "#36A2EB",
-              "#FFCE56",
-              "#4BC0C0",
-              "#9966FF",
-              "#FF9F40",
-            ],
-            borderWidth: 1,
-          },
-        ],
-      };
-      setPieData(pie);
+      const allTransactions: Transaction[] = response.data.items || [];
 
-      // ----- Line chart (theo ngày) -----
-      const dailyTotals: Record<string, number> = {};
-      transactions.forEach((tx) => {
-        const date = new Date(tx.occurredAt).toLocaleDateString("vi-VN");
-        dailyTotals[date] = (dailyTotals[date] || 0) + Math.abs(tx.amount);
-      });
+      if (allTransactions.length === 0) {
+        setError("Không có dữ liệu trong khoảng thời gian này");
+        setPieExpenseData(null);
+        setPieIncomeData(null);
+        setLineData(null);
+        return;
+      }
 
-      const line = {
-        labels: Object.keys(dailyTotals),
-        datasets: [
-          {
-            label: "Chi tiêu theo ngày",
-            data: Object.values(dailyTotals),
-            borderColor: "#6366F1",
-            backgroundColor: "rgba(99, 102, 241, 0.1)",
-            borderWidth: 3,
-            tension: 0.4,
-            fill: true,
-            pointBackgroundColor: "#6366F1",
-            pointBorderColor: "#ffffff",
-            pointBorderWidth: 2,
-            pointRadius: 5,
+      // ----- Pie chi tiêu -----
+      const expenseTransactions = allTransactions.filter((t) => t.amount < 0);
+      if (expenseTransactions.length > 0) {
+        const categoryExpenses = expenseTransactions.reduce(
+          (acc: { [key: string]: number }, transaction) => {
+            const category = transaction.categoryName;
+            const amount = Math.abs(transaction.amount);
+            acc[category] = (acc[category] || 0) + amount;
+            return acc;
           },
-        ],
-      };
-      setLineData(line);
+          {}
+        );
+
+        setPieExpenseData({
+          labels: Object.keys(categoryExpenses),
+          datasets: [
+            {
+              data: Object.values(categoryExpenses),
+              backgroundColor: [
+                "#FF6384",
+                "#36A2EB",
+                "#FFCE56",
+                "#4BC0C0",
+                "#9966FF",
+                "#FF9F40",
+              ],
+              borderWidth: 1,
+            },
+          ],
+        });
+      } else {
+        setPieExpenseData(null);
+      }
+
+      // ----- Pie thu nhập -----
+      const incomeTransactions = allTransactions.filter((t) => t.amount > 0);
+      if (incomeTransactions.length > 0) {
+        const categoryIncomes = incomeTransactions.reduce(
+          (acc: { [key: string]: number }, transaction) => {
+            const category = transaction.categoryName;
+            const amount = transaction.amount;
+            acc[category] = (acc[category] || 0) + amount;
+            return acc;
+          },
+          {}
+        );
+
+        setPieIncomeData({
+          labels: Object.keys(categoryIncomes),
+          datasets: [
+            {
+              data: Object.values(categoryIncomes),
+              backgroundColor: [
+                "#22C55E",
+                "#3B82F6",
+                "#F59E0B",
+                "#8B5CF6",
+                "#EC4899",
+                "#14B8A6",
+              ],
+              borderWidth: 1,
+            },
+          ],
+        });
+      } else {
+        setPieIncomeData(null);
+      }
+
+      // ----- Line chart (chi tiêu theo ngày + category) -----
+      if (expenseTransactions.length > 0) {
+        const categories = Array.from(
+          new Set(expenseTransactions.map((t) => t.categoryName))
+        );
+
+        const dates = Array.from(
+          new Set(
+            expenseTransactions.map((t) =>
+              new Date(t.occurredAt).toLocaleDateString("vi-VN")
+            )
+          )
+        ).sort(
+          (a, b) =>
+            new Date(a.split("/").reverse().join("-")).getTime() -
+            new Date(b.split("/").reverse().join("-")).getTime()
+        );
+
+        const colors = [
+          "#6366F1",
+          "#F43F5E",
+          "#22C55E",
+          "#EAB308",
+          "#0EA5E9",
+          "#A855F7",
+        ];
+
+        const datasets = categories.map((category, idx) => {
+          const data = dates.map((date) => {
+            const txs = expenseTransactions.filter(
+              (t) =>
+                t.categoryName === category &&
+                new Date(t.occurredAt).toLocaleDateString("vi-VN") === date
+            );
+            return txs.reduce((sum, t) => sum + Math.abs(t.amount), 0);
+          });
+
+          return {
+            label: category,
+            data,
+            borderColor: colors[idx % colors.length],
+            backgroundColor: colors[idx % colors.length] + "20",
+            borderWidth: 2,
+            tension: 0.3,
+            fill: false,
+            pointBackgroundColor: colors[idx % colors.length],
+            pointRadius: 4,
+          };
+        });
+
+        setLineData({
+          labels: dates,
+          datasets,
+        });
+      } else {
+        setLineData(null);
+      }
     } catch (err) {
+      console.error(err);
       setError("Không thể tải dữ liệu biểu đồ");
     } finally {
       setLoading(false);
@@ -156,7 +219,7 @@ const fetchTransactions = async () => {
 
   const lineOptions = {
     responsive: true,
-    plugins: { legend: { display: false } },
+    plugins: { legend: { position: "bottom" as const } },
     scales: {
       y: {
         beginAtZero: true,
@@ -172,53 +235,108 @@ const fetchTransactions = async () => {
     },
   };
 
-  if (loading) {
-    return (
-      <div className="bg-white p-6 rounded-lg shadow">
-        <h3 className="text-lg font-semibold text-gray-900 mb-4">
-          Biểu đồ chi tiêu
-        </h3>
-        <div className="flex items-center justify-center h-64">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-indigo-600"></div>
-        </div>
-      </div>
-    );
-  }
-
-  if (error || !pieData || !lineData) {
-    return (
-      <div className="bg-white p-6 rounded-lg shadow">
-        <h3 className="text-lg font-semibold text-gray-900 mb-4">
-          Biểu đồ chi tiêu
-        </h3>
-        <div className="text-center py-8">
-          <p className="text-gray-500">{error || "Chưa có dữ liệu để hiển thị"}</p>
-        </div>
-      </div>
-    );
-  }
-
   return (
     <div className="space-y-6">
-      {/* Pie Chart */}
-      <div className="bg-white p-6 rounded-lg shadow">
-        <h3 className="text-lg font-semibold text-gray-900 mb-4">
-          Phân tích chi tiêu theo danh mục
-        </h3>
-        <div className="w-full h-64">
-          <Pie data={pieData} options={pieOptions} />
+      {/* Bộ lọc ngày */}
+      <div className="bg-white p-4 rounded-lg shadow flex gap-4 items-end">
+        <div>
+          <label className="text-sm font-medium text-gray-700">Từ ngày</label>
+          <input
+            type="date"
+            value={fromDate}
+            onChange={(e) => setFromDate(e.target.value)}
+            className="border rounded px-3 py-2 w-full"
+          />
         </div>
+        <div>
+          <label className="text-sm font-medium text-gray-700">Đến ngày</label>
+          <input
+            type="date"
+            value={toDate}
+            onChange={(e) => setToDate(e.target.value)}
+            className="border rounded px-3 py-2 w-full"
+          />
+        </div>
+        <button
+          onClick={() => fetchTransactions(fromDate, toDate)}
+          className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700"
+        >
+          Lọc
+        </button>
       </div>
 
-      {/* Line Chart */}
-      <div className="bg-white p-6 rounded-lg shadow">
-        <h3 className="text-lg font-semibold text-gray-900 mb-4">
-          Xu hướng chi tiêu trong tháng
-        </h3>
-        <div className="h-64">
-          <Line data={lineData} options={lineOptions} />
+      {loading ? (
+        <div className="bg-white p-6 rounded-lg shadow">
+          <h3 className="text-lg font-semibold text-gray-900 mb-4">
+            Biểu đồ thu & chi
+          </h3>
+          <div className="flex items-center justify-center h-64">
+            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-indigo-600"></div>
+          </div>
         </div>
-      </div>
+      ) : error || (!pieExpenseData && !pieIncomeData && !lineData) ? (
+        <div className="bg-white p-6 rounded-lg shadow">
+          <h3 className="text-lg font-semibold text-gray-900 mb-4">
+            Biểu đồ thu & chi
+          </h3>
+          <div className="text-center py-8">
+            <p className="text-gray-500">
+              {error || "Chưa có dữ liệu để hiển thị"}
+            </p>
+          </div>
+        </div>
+      ) : (
+        <>
+          {/* Pie Charts */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div className="bg-white p-6 rounded-lg shadow">
+              <h3 className="text-lg font-semibold text-gray-900 mb-4">
+                Chi tiêu theo danh mục
+              </h3>
+              <div className="w-full h-64">
+                {pieExpenseData ? (
+                  <Pie data={pieExpenseData} options={pieOptions} />
+                ) : (
+                  <p className="text-gray-500 text-center py-8">
+                    Chưa có dữ liệu chi tiêu
+                  </p>
+                )}
+              </div>
+            </div>
+
+            <div className="bg-white p-6 rounded-lg shadow">
+              <h3 className="text-lg font-semibold text-gray-900 mb-4">
+                Thu nhập theo danh mục
+              </h3>
+              <div className="w-full h-64">
+                {pieIncomeData ? (
+                  <Pie data={pieIncomeData} options={pieOptions} />
+                ) : (
+                  <p className="text-gray-500 text-center py-8">
+                    Chưa có dữ liệu thu nhập
+                  </p>
+                )}
+              </div>
+            </div>
+          </div>
+
+          {/* Line Chart */}
+          <div className="bg-white p-6 rounded-lg shadow">
+            <h3 className="text-lg font-semibold text-gray-900 mb-4">
+              Xu hướng chi tiêu (theo danh mục)
+            </h3>
+            <div className="h-64">
+              {lineData ? (
+                <Line data={lineData} options={lineOptions} />
+              ) : (
+                <p className="text-gray-500 text-center py-8">
+                  Chưa có dữ liệu chi tiêu
+                </p>
+              )}
+            </div>
+          </div>
+        </>
+      )}
     </div>
   );
 };

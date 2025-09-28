@@ -44,7 +44,9 @@ const TransactionPage: React.FC = () => {
   const [error, setError] = useState<string>('');
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [showFilters, setShowFilters] = useState(false);
-
+const [isDeleteOpen, setIsDeleteOpen] = useState(false);
+const [transactionToDelete, setTransactionToDelete] = useState<Transaction | null>(null);
+const [successMessage, setSuccessMessage] = useState('');
   // Pagination state (zero-based)
   const [pagination, setPagination] = useState<PaginationInfo>({
     currentPage: 0,
@@ -124,7 +126,31 @@ const TransactionPage: React.FC = () => {
     },
     []
   );
-  
+  const handleOpenDelete = (transaction: Transaction) => {
+  setTransactionToDelete(transaction);
+  setIsDeleteOpen(true);
+};
+
+const handleCloseDelete = () => {
+  setTransactionToDelete(null);
+  setIsDeleteOpen(false);
+};
+const handleDelete = async () => {
+  if (!transactionToDelete) return;
+  try {
+    setLoading(true);
+    await axiosInstance.delete(`/transactions/${transactionToDelete.id}`);
+    reloadTransactions();
+    handleCloseDelete();
+     setSuccessMessage('Đã xoá giao dịch thành công!');
+    setTimeout(() => setSuccessMessage(''), 3000); // tự tắt sau 3s
+  } catch (err) {
+    console.error('Error deleting transaction:', err);
+    setError('Không thể xoá giao dịch. Vui lòng thử lại.');
+  } finally {
+    setLoading(false);
+  }
+};
   const handleOpenUpdate = (transaction: Transaction) => {
     setSelectedTransaction(transaction);
     setIsUpdateOpen(true);
@@ -569,7 +595,7 @@ const TransactionPage: React.FC = () => {
                           >
                             <Edit size={16} className="group-hover/btn:scale-110 transition-transform duration-200" />
                           </button>
-                          <button className="group/btn p-2 text-rose-600 hover:text-rose-700 hover:bg-rose-50 rounded-lg transition-all duration-200 hover:shadow-sm">
+                          <button onClick={() => handleOpenDelete(t)} className="group/btn p-2 text-rose-600 hover:text-rose-700 hover:bg-rose-50 rounded-lg transition-all duration-200 hover:shadow-sm">
                             <Trash2 size={16} className="group-hover/btn:scale-110 transition-transform duration-200" />
                           </button>
                         </div>
@@ -639,9 +665,44 @@ const TransactionPage: React.FC = () => {
         onSuccess={fetchTransactions}
         transaction={selectedTransaction}
       />
-
+{isDeleteOpen && (
+  <div className="fixed inset-0 bg-black/40 backdrop-blur-sm flex items-center justify-center z-50">
+    <div className="bg-white rounded-2xl shadow-xl p-6 w-full max-w-md animate-[slideUp_0.3s_ease-out]">
+      <h2 className="text-lg font-semibold text-slate-800 mb-4">
+        Xác nhận xoá giao dịch
+      </h2>
+      <p className="text-slate-600 mb-6">
+        Bạn có chắc chắn muốn xoá giao dịch{' '}
+        <span className="font-medium text-slate-800">
+          "{transactionToDelete?.note}"
+        </span>{' '}
+        không?
+      </p>
+      <div className="flex justify-end gap-3">
+        <button
+          onClick={handleCloseDelete}
+          className="px-4 py-2 rounded-lg border border-slate-200 text-slate-600 hover:bg-slate-50 transition-all"
+        >
+          Huỷ
+        </button>
+        <button
+          onClick={handleDelete}
+          disabled={loading}
+          className="px-4 py-2 rounded-lg bg-rose-600 text-white hover:bg-rose-700 transition-all disabled:opacity-50"
+        >
+          {loading ? 'Đang xoá...' : 'Xoá'}
+        </button>
+      </div>
+    </div>
+  </div>
+)}
+{successMessage && (
+  <div className="fixed bottom-6 right-6 bg-emerald-600 text-white px-4 py-3 rounded-xl shadow-lg animate-[slideUp_0.3s_ease-out]">
+    {successMessage}
+  </div>
+)}
       {/* CSS cho custom animations */}
-      <style jsx>{`
+      <style>{`
         @keyframes slideDown {
           from {
             opacity: 0;
