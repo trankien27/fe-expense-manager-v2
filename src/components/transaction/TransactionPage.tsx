@@ -10,6 +10,11 @@ import {
   Edit,
   Trash2,
   RefreshCw,
+  TrendingUp,
+  TrendingDown,
+  X,
+  ChevronLeft,
+  ChevronRight,
 } from 'lucide-react';
 import type { Transaction } from '../../types';
 import axiosInstance from '../../services/axiosInstance';
@@ -38,6 +43,7 @@ const TransactionPage: React.FC = () => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string>('');
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [showFilters, setShowFilters] = useState(false);
 
   // Pagination state (zero-based)
   const [pagination, setPagination] = useState<PaginationInfo>({
@@ -118,6 +124,7 @@ const TransactionPage: React.FC = () => {
     },
     []
   );
+  
   const handleOpenUpdate = (transaction: Transaction) => {
     setSelectedTransaction(transaction);
     setIsUpdateOpen(true);
@@ -127,6 +134,7 @@ const TransactionPage: React.FC = () => {
     setIsUpdateOpen(false);
     setSelectedTransaction(null);
   };
+  
   // Fetch khi filters thay đổi
   useEffect(() => {
     fetchTransactions(
@@ -252,251 +260,319 @@ const TransactionPage: React.FC = () => {
     }).format(new Date(dateString));
 
   const getTransactionTypeColor = (amount: number) =>
-    amount >= 0 ? 'text-green-600' : 'text-red-600';
+    amount >= 0 ? 'text-emerald-600' : 'text-rose-600';
   const getTransactionTypeBg = (amount: number) =>
-    amount >= 0 ? 'bg-green-100' : 'bg-red-100';
+    amount >= 0 ? 'bg-gradient-to-br from-emerald-50 to-emerald-100' : 'bg-gradient-to-br from-rose-50 to-rose-100';
 
-  const getAllPaginationNumbers = () =>
-    Array.from({ length: pagination.totalPages }, (_, i) => i); // zero-based array [0..n-1]
+  const getPaginationNumbers = () => {
+    const current = pagination.currentPage;
+    const total = pagination.totalPages;
+    const delta = 2;
+    
+    let pages: (number | string)[] = [];
+    
+    if (total <= 7) {
+      pages = Array.from({ length: total }, (_, i) => i);
+    } else {
+      const left = Math.max(0, current - delta);
+      const right = Math.min(total - 1, current + delta);
+      
+      if (left > 0) pages.push(0);
+      if (left > 1) pages.push('...');
+      
+      for (let i = left; i <= right; i++) {
+        pages.push(i);
+      }
+      
+      if (right < total - 2) pages.push('...');
+      if (right < total - 1) pages.push(total - 1);
+    }
+    
+    return pages;
+  };
 
   return (
-    <div className="min-h-screen bg-gray-50 p-6">
-      <div className="max-w-7xl mx-auto">
-        {/* Header */}
-        <div className="mb-8 flex justify-between items-center">
-          <div>
-            <h1 className="text-3xl font-bold text-gray-900">
-              Quản Lý Giao Dịch
-            </h1>
-            <p className="text-gray-600 mt-1">
-              Tổng cộng {pagination.totalItems} giao dịch
-            </p>
-          </div>
-          <div className="flex gap-3">
-            <button
-              onClick={reloadTransactions}
-              disabled={loading}
-              className="bg-gray-100 hover:bg-gray-200 text-gray-700 px-4 py-2 rounded-lg flex items-center gap-2 disabled:opacity-50"
-            >
-              <RefreshCw
-                size={20}
-                className={loading ? 'animate-spin' : ''}
-              />{' '}
-              Làm mới
-            </button>
-            <button
-              onClick={() => setIsModalOpen(true)}
-              className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg flex items-center gap-2"
-            >
-              <Plus size={20} /> Thêm Giao Dịch
-            </button>
+    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50 transition-all duration-700">
+      <div className="max-w-7xl mx-auto p-6">
+        {/* Header với animation slide in */}
+        <div className="mb-8 animate-[slideDown_0.6s_ease-out] opacity-0 [animation-fill-mode:forwards]">
+          <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+            <div className="space-y-2">
+              <h1 className="text-4xl font-bold bg-gradient-to-r from-slate-800 to-slate-600 bg-clip-text text-transparent">
+                Quản Lý Giao Dịch
+              </h1>
+              <p className="text-slate-600 flex items-center gap-2">
+                <Wallet size={16} className="text-blue-500" />
+                Tổng cộng {pagination.totalItems.toLocaleString()} giao dịch
+              </p>
+            </div>
+            <div className="flex gap-3">
+              <button
+                onClick={reloadTransactions}
+                disabled={loading}
+                className="group bg-white/80 backdrop-blur-sm hover:bg-white border border-slate-200 hover:border-slate-300 text-slate-700 px-4 py-2.5 rounded-xl flex items-center gap-2 disabled:opacity-50 transition-all duration-300 hover:shadow-lg hover:-translate-y-0.5"
+              >
+                <RefreshCw
+                  size={20}
+                  className={`transition-transform duration-500 ${loading ? 'animate-spin' : 'group-hover:rotate-180'}`}
+                />
+                Làm mới
+              </button>
+              <button
+                onClick={() => setIsModalOpen(true)}
+                className="group bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white px-4 py-2.5 rounded-xl flex items-center gap-2 transition-all duration-300 hover:shadow-lg hover:-translate-y-0.5"
+              >
+                <Plus size={20} className="group-hover:rotate-90 transition-transform duration-300" />
+                Thêm Giao Dịch
+              </button>
+            </div>
           </div>
         </div>
 
-        {/* Filters */}
-        <div className="bg-white rounded-xl shadow-sm p-6 mb-6 border border-gray-200">
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-6 gap-4">
-            {/* Search chung */}
-            <div className="relative lg:col-span-2">
-              <Search
-                className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400"
-                size={20}
-              />
-              <input
-                type="text"
-                placeholder="Tìm kiếm chung..."
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-                className="w-full pl-10 pr-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500"
-              />
+        {/* Filter Toggle Button */}
+        <div className="mb-6 animate-[slideUp_0.7s_ease-out_0.1s] opacity-0 [animation-fill-mode:forwards]">
+          <button
+            onClick={() => setShowFilters(!showFilters)}
+            className="group bg-white/80 backdrop-blur-sm hover:bg-white border border-slate-200 hover:border-slate-300 text-slate-700 px-4 py-2.5 rounded-xl flex items-center gap-2 transition-all duration-300 hover:shadow-md"
+          >
+            <Filter size={20} className={`transition-transform duration-300 ${showFilters ? 'rotate-180' : ''}`} />
+            {showFilters ? 'Ẩn bộ lọc' : 'Hiện bộ lọc'}
+          </button>
+        </div>
+
+        {/* Filters với animation collapse */}
+        <div className={`transition-all duration-500 ease-in-out overflow-hidden ${showFilters ? 'max-h-96 opacity-100 mb-6' : 'max-h-0 opacity-0'}`}>
+          <div className="bg-white/80 backdrop-blur-sm rounded-2xl shadow-lg shadow-slate-200/50 p-6 border border-white/50 transition-all duration-300">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-6 gap-4">
+              {/* Search chung */}
+              <div className="relative lg:col-span-2 group">
+                <Search
+                  className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 transition-colors duration-200 group-focus-within:text-blue-500"
+                  size={20}
+                />
+                <input
+                  type="text"
+                  placeholder="Tìm kiếm chung..."
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                  className="w-full pl-10 pr-4 py-3 bg-white/50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all duration-300 hover:border-slate-300"
+                />
+              </div>
+
+              {/* Search theo note */}
+              <div className="relative lg:col-span-2 group">
+                <Search
+                  className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 transition-colors duration-200 group-focus-within:text-blue-500"
+                  size={20}
+                />
+                <input
+                  type="text"
+                  placeholder="Tìm kiếm theo ghi chú..."
+                  value={noteSearch}
+                  onChange={(e) => setNoteSearch(e.target.value)}
+                  className="w-full pl-10 pr-4 py-3 bg-white/50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all duration-300 hover:border-slate-300"
+                />
+              </div>
+
+              {/* Wallet */}
+              <select
+                value={selectedWallet}
+                onChange={(e) => setSelectedWallet(e.target.value)}
+                className="px-4 py-3 bg-white/50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all duration-300 hover:border-slate-300"
+              >
+                <option value="">Tất cả ví</option>
+                {uniqueWallets.map((w) => (
+                  <option key={w} value={w}>{w}</option>
+                ))}
+              </select>
+
+              {/* Category */}
+              <select
+                value={selectedCategory}
+                onChange={(e) => setSelectedCategory(e.target.value)}
+                className="px-4 py-3 bg-white/50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all duration-300 hover:border-slate-300"
+              >
+                <option value="">Tất cả danh mục</option>
+                {uniqueCategories.map((c) => (
+                  <option key={c} value={c}>{c}</option>
+                ))}
+              </select>
             </div>
 
-            {/* Search theo note */}
-            <div className="relative lg:col-span-2">
-              <Search
-                className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400"
-                size={20}
-              />
-              <input
-                type="text"
-                placeholder="Tìm kiếm theo ghi chú..."
-                value={noteSearch}
-                onChange={(e) => setNoteSearch(e.target.value)}
-                className="w-full pl-10 pr-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500"
-              />
+            {/* Date range */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
+              <div className="space-y-2">
+                <label className="text-sm font-medium text-slate-600">Từ ngày</label>
+                <input
+                  type="date"
+                  value={dateRange.startDate}
+                  onChange={(e) =>
+                    setDateRange((prev) => ({
+                      ...prev,
+                      startDate: e.target.value,
+                    }))
+                  }
+                  className="w-full px-4 py-3 bg-white/50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all duration-300 hover:border-slate-300"
+                />
+              </div>
+              <div className="space-y-2">
+                <label className="text-sm font-medium text-slate-600">Đến ngày</label>
+                <input
+                  type="date"
+                  value={dateRange.endDate}
+                  onChange={(e) =>
+                    setDateRange((prev) => ({
+                      ...prev,
+                      endDate: e.target.value,
+                    }))
+                  }
+                  className="w-full px-4 py-3 bg-white/50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all duration-300 hover:border-slate-300"
+                />
+              </div>
             </div>
 
-            {/* Wallet */}
-            <select
-              value={selectedWallet}
-              onChange={(e) => setSelectedWallet(e.target.value)}
-              className="px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500"
-            >
-              <option value="">Tất cả ví</option>
-              {uniqueWallets.map((w) => (
-                <option key={w}>{w}</option>
-              ))}
-            </select>
-
-            {/* Category */}
-            <select
-              value={selectedCategory}
-              onChange={(e) => setSelectedCategory(e.target.value)}
-              className="px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500"
-            >
-              <option value="">Tất cả danh mục</option>
-              {uniqueCategories.map((c) => (
-                <option key={c}>{c}</option>
-              ))}
-            </select>
-          </div>
-
-          {/* Date range */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
-            <div>
-              <label className="text-sm text-gray-600">Từ ngày</label>
-              <input
-                type="date"
-                value={dateRange.startDate}
-                onChange={(e) =>
-                  setDateRange((prev) => ({
-                    ...prev,
-                    startDate: e.target.value,
-                  }))
-                }
-                className="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500"
-              />
+            {/* Clear filters */}
+            <div className="mt-6">
+              <button
+                onClick={clearFilters}
+                className="group px-4 py-2.5 bg-slate-100 hover:bg-slate-200 border border-slate-200 rounded-xl hover:border-slate-300 flex items-center gap-2 transition-all duration-300 hover:shadow-md"
+              >
+                <X size={16} className="group-hover:rotate-90 transition-transform duration-300" />
+                Xóa lọc
+              </button>
             </div>
-            <div>
-              <label className="text-sm text-gray-600">Đến ngày</label>
-              <input
-                type="date"
-                value={dateRange.endDate}
-                onChange={(e) =>
-                  setDateRange((prev) => ({
-                    ...prev,
-                    endDate: e.target.value,
-                  }))
-                }
-                className="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500"
-              />
-            </div>
-          </div>
-
-          {/* Clear filters */}
-          <div className="mt-4">
-            <button
-              onClick={clearFilters}
-              className="px-4 py-2 border rounded-lg hover:bg-gray-50 flex items-center gap-2"
-            >
-              <Filter size={16} /> Xóa lọc
-            </button>
           </div>
         </div>
 
-        {/* Error */}
+        {/* Error với animation */}
         {error && (
-          <div className="bg-red-50 p-4 rounded-lg mb-6 text-red-700">
-            {error}
+          <div className="bg-gradient-to-r from-red-50 to-rose-50 border border-red-200 p-4 rounded-xl mb-6 text-red-700 animate-[slideUp_0.3s_ease-out] shadow-sm">
+            <div className="flex items-center gap-2">
+              <div className="w-2 h-2 bg-red-500 rounded-full animate-pulse"></div>
+              {error}
+            </div>
           </div>
         )}
 
-        {/* Table */}
-        <div className="bg-white rounded-xl shadow-sm overflow-hidden">
+        {/* Table với animation stagger */}
+        <div className="bg-white/80 backdrop-blur-sm rounded-2xl shadow-xl shadow-slate-200/50 overflow-hidden border border-white/50 animate-[slideUp_0.8s_ease-out_0.2s] opacity-0 [animation-fill-mode:forwards]">
           <div className="overflow-x-auto">
-            <table className="min-w-full divide-y">
-              <thead className="bg-gray-50">
+            <table className="min-w-full divide-y divide-slate-200">
+              <thead className="bg-gradient-to-r from-slate-50 to-slate-100">
                 <tr>
-                  <th className="px-6 py-3 text-left text-xs font-medium">
+                  <th className="px-6 py-4 text-left text-xs font-semibold text-slate-700 uppercase tracking-wider">
                     Giao Dịch
                   </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium">
+                  <th className="px-6 py-4 text-left text-xs font-semibold text-slate-700 uppercase tracking-wider">
                     Ví / Danh Mục
                   </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium">
+                  <th className="px-6 py-4 text-left text-xs font-semibold text-slate-700 uppercase tracking-wider">
                     Số Tiền
                   </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium">
+                  <th className="px-6 py-4 text-left text-xs font-semibold text-slate-700 uppercase tracking-wider">
                     Thời Gian
                   </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium">
+                  <th className="px-6 py-4 text-left text-xs font-semibold text-slate-700 uppercase tracking-wider">
                     Hành Động
                   </th>
                 </tr>
               </thead>
-              <tbody>
+              <tbody className="divide-y divide-slate-100">
                 {loading ? (
                   <tr>
-                    <td colSpan={5} className="text-center py-6">
-                      Đang tải...
+                    <td colSpan={5} className="text-center py-12">
+                      <div className="flex items-center justify-center space-x-2">
+                        <div className="w-2 h-2 bg-blue-500 rounded-full animate-bounce"></div>
+                        <div className="w-2 h-2 bg-blue-500 rounded-full animate-bounce [animation-delay:0.1s]"></div>
+                        <div className="w-2 h-2 bg-blue-500 rounded-full animate-bounce [animation-delay:0.2s]"></div>
+                        <span className="ml-3 text-slate-600">Đang tải...</span>
+                      </div>
                     </td>
                   </tr>
                 ) : transactions.length === 0 ? (
                   <tr>
-                    <td
-                      colSpan={5}
-                      className="text-center py-6 text-gray-500"
-                    >
-                      Không có giao dịch
+                    <td colSpan={5} className="text-center py-12 text-slate-500">
+                      <div className="flex flex-col items-center space-y-2">
+                        <Wallet size={48} className="text-slate-300" />
+                        <span>Không có giao dịch</span>
+                      </div>
                     </td>
                   </tr>
                 ) : (
-                  transactions.map((t) => (
-                    <tr key={t.id} className="hover:bg-gray-50">
+                  transactions.map((t, index) => (
+                    <tr 
+                      key={t.id} 
+                      className="group hover:bg-slate-50 transition-all duration-200 animate-[fadeInUp_0.4s_ease-out] opacity-0 [animation-fill-mode:forwards]"
+                      style={{ animationDelay: `${index * 0.05}s` }}
+                    >
                       <td className="px-6 py-4">
                         <div className="flex items-center">
                           <div
-                            className={`h-10 w-10 rounded-full ${getTransactionTypeBg(
+                            className={`h-12 w-12 rounded-full ${getTransactionTypeBg(
                               t.amount
-                            )} flex items-center justify-center`}
+                            )} flex items-center justify-center shadow-sm transition-all duration-300 group-hover:shadow-md group-hover:scale-110`}
                           >
-                            <DollarSign
-                              className={`h-5 w-5 ${getTransactionTypeColor(
-                                t.amount
-                              )}`}
-                            />
+                            {t.amount >= 0 ? (
+                              <TrendingUp
+                                className={`h-5 w-5 ${getTransactionTypeColor(
+                                  t.amount
+                                )}`}
+                              />
+                            ) : (
+                              <TrendingDown
+                                className={`h-5 w-5 ${getTransactionTypeColor(
+                                  t.amount
+                                )}`}
+                              />
+                            )}
                           </div>
-                          <div className="ml-3">
-                            <div className="font-medium">{t.note}</div>
-                            <div className="text-sm text-gray-500">
+                          <div className="ml-4">
+                            <div className="font-medium text-slate-900 group-hover:text-slate-700 transition-colors duration-200">
+                              {t.note}
+                            </div>
+                            <div className="text-sm text-slate-500">
                               ID: {t.id.slice(0, 8)}...
                             </div>
                           </div>
                         </div>
                       </td>
                       <td className="px-6 py-4">
-                        <div>{t.walletName}</div>
-                        <div className="text-sm text-gray-500">
+                        <div className="font-medium text-slate-800">{t.walletName}</div>
+                        <div className="text-sm text-slate-500 bg-slate-100 px-2 py-1 rounded-md inline-block mt-1">
                           {t.categoryName}
                         </div>
                       </td>
                       <td className="px-6 py-4">
                         <div
-                          className={`font-semibold ${getTransactionTypeColor(
+                          className={`font-bold text-lg ${getTransactionTypeColor(
                             t.amount
-                          )}`}
+                          )} transition-colors duration-200`}
                         >
                           {t.amount >= 0 ? '+' : ''}
                           {formatCurrency(t.amount)}
                         </div>
-                        <div className="text-sm text-gray-500">
+                        <div className="text-sm text-slate-500 font-medium">
                           {t.currency}
                         </div>
                       </td>
-                      <td className="px-6 py-4 text-sm text-gray-500 flex items-center">
-                        <Calendar size={16} className="mr-1" />{' '}
-                        {formatDate(t.occurredAt)}
-                      </td>
-                      <td className="px-6 py-4 gap-8">
-                        <div className="flex items-center gap-4">
-                        <button className="text-green-600 hover:text-green-800" onClick={() => handleOpenUpdate(t)}>
-                          <Edit size={16} />
-                        </button>
-                        <button className="text-red-600 hover:text-red-800">
-                          <Trash2 size={16} />
-                        </button>
+                      <td className="px-6 py-4">
+                        <div className="flex items-center text-slate-600 bg-slate-50 px-3 py-1.5 rounded-lg">
+                          <Calendar size={16} className="mr-2 text-blue-500" />
+                          <span className="text-sm font-medium">{formatDate(t.occurredAt)}</span>
                         </div>
-                       
+                      </td>
+                      <td className="px-6 py-4">
+                        <div className="flex items-center gap-3">
+                          <button 
+                            className="group/btn p-2 text-emerald-600 hover:text-emerald-700 hover:bg-emerald-50 rounded-lg transition-all duration-200 hover:shadow-sm"
+                            onClick={() => handleOpenUpdate(t)}
+                          >
+                            <Edit size={16} className="group-hover/btn:scale-110 transition-transform duration-200" />
+                          </button>
+                          <button className="group/btn p-2 text-rose-600 hover:text-rose-700 hover:bg-rose-50 rounded-lg transition-all duration-200 hover:shadow-sm">
+                            <Trash2 size={16} className="group-hover/btn:scale-110 transition-transform duration-200" />
+                          </button>
+                        </div>
                       </td>
                     </tr>
                   ))
@@ -504,40 +580,49 @@ const TransactionPage: React.FC = () => {
               </tbody>
             </table>
           </div>
-          <div className="flex justify-center items-center gap-2 py-4">
-            <button
-              onClick={() => handlePageChange(0)}
-              disabled={pagination.currentPage === 0}
-              className="px-3 py-1 border rounded disabled:opacity-50"
-            >
-              « Đầu
-            </button>
-
-            {getAllPaginationNumbers().map((pageNum) => (
+          
+          {/* Pagination với animation */}
+          <div className="flex flex-col sm:flex-row justify-between items-center gap-4 p-6 bg-gradient-to-r from-slate-50 to-slate-100 border-t border-slate-200">
+            <div className="text-sm text-slate-600">
+              Hiển thị {((pagination.currentPage) * pagination.pageSize) + 1} đến {Math.min((pagination.currentPage + 1) * pagination.pageSize, pagination.totalItems)} trong tổng số {pagination.totalItems} giao dịch
+            </div>
+            
+            <div className="flex items-center gap-2">
               <button
-                key={pageNum}
-                onClick={() => handlePageChange(pageNum)}
-                className={`px-3 py-1 border rounded ${
-                  pagination.currentPage === pageNum
-                    ? 'bg-blue-600 text-white'
-                    : 'hover:bg-gray-100'
-                }`}
+                onClick={() => handlePageChange(Math.max(0, pagination.currentPage - 1))}
+                disabled={pagination.currentPage === 0}
+                className="p-2 border border-slate-200 rounded-lg disabled:opacity-50 disabled:cursor-not-allowed hover:bg-white hover:shadow-sm transition-all duration-200 group"
               >
-                {pageNum + 1}
+                <ChevronLeft size={16} className="group-hover:-translate-x-0.5 transition-transform duration-200" />
               </button>
-            ))}
 
-            <button
-              onClick={() =>
-                handlePageChange(pagination.totalPages - 1)
-              }
-              disabled={
-                pagination.currentPage === pagination.totalPages - 1
-              }
-              className="px-3 py-1 border rounded disabled:opacity-50"
-            >
-              Cuối »
-            </button>
+              <div className="flex items-center gap-1">
+                {getPaginationNumbers().map((pageNum, index) => (
+                  <button
+                    key={index}
+                    onClick={() => typeof pageNum === 'number' ? handlePageChange(pageNum) : undefined}
+                    disabled={typeof pageNum === 'string'}
+                    className={`px-3 py-2 text-sm font-medium rounded-lg transition-all duration-200 ${
+                      pagination.currentPage === pageNum
+                        ? 'bg-gradient-to-r from-blue-600 to-indigo-600 text-white shadow-sm'
+                        : typeof pageNum === 'string'
+                        ? 'cursor-default text-slate-400'
+                        : 'hover:bg-white hover:shadow-sm border border-slate-200'
+                    }`}
+                  >
+                    {typeof pageNum === 'number' ? pageNum + 1 : pageNum}
+                  </button>
+                ))}
+              </div>
+
+              <button
+                onClick={() => handlePageChange(Math.min(pagination.totalPages - 1, pagination.currentPage + 1))}
+                disabled={pagination.currentPage === pagination.totalPages - 1}
+                className="p-2 border border-slate-200 rounded-lg disabled:opacity-50 disabled:cursor-not-allowed hover:bg-white hover:shadow-sm transition-all duration-200 group"
+              >
+                <ChevronRight size={16} className="group-hover:translate-x-0.5 transition-transform duration-200" />
+              </button>
+            </div>
           </div>
         </div>
       </div>
@@ -548,12 +633,48 @@ const TransactionPage: React.FC = () => {
         onClose={() => setIsModalOpen(false)}
         onSuccess={reloadTransactions}
       />
-            <UpdateTransactionModal
+      <UpdateTransactionModal
         isOpen={isUpdateOpen}
         onClose={handleCloseUpdate}
         onSuccess={fetchTransactions}
         transaction={selectedTransaction}
       />
+
+      {/* CSS cho custom animations */}
+      <style jsx>{`
+        @keyframes slideDown {
+          from {
+            opacity: 0;
+            transform: translateY(-20px);
+          }
+          to {
+            opacity: 1;
+            transform: translateY(0);
+          }
+        }
+        
+        @keyframes slideUp {
+          from {
+            opacity: 0;
+            transform: translateY(20px);
+          }
+          to {
+            opacity: 1;
+            transform: translateY(0);
+          }
+        }
+        
+        @keyframes fadeInUp {
+          from {
+            opacity: 0;
+            transform: translateY(10px);
+          }
+          to {
+            opacity: 1;
+            transform: translateY(0);
+          }
+        }
+      `}</style>
     </div>
   );
 };

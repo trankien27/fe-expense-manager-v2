@@ -6,6 +6,7 @@ import DashboardPage from './pages/DashboardPage';
 import Header from './components/Header';
 import TransactionPage from './components/transaction/TransactionPage';
 import WalletPage from './components/wallet/WalletPage';
+import CategoryPage from './components/category/CategoryPage'; // 👈 thêm import
 
 const ProtectedRoute: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const { isAuthenticated, loading } = useAuth();
@@ -25,9 +26,10 @@ const App: React.FC = () => {
   return (
     <AuthProvider>
       <Router>
-        <Header/>
+        <Header />
         <Routes>
           <Route path="/login" element={<LoginPage />} />
+          
           <Route 
             path="/" 
             element={
@@ -36,9 +38,35 @@ const App: React.FC = () => {
               </ProtectedRoute>
             } 
           />
+
+          <Route 
+            path="/transaction" 
+            element={
+              <ProtectedRoute>
+                <TransactionPage />
+              </ProtectedRoute>
+            } 
+          />
+
+          <Route 
+            path="/wallets" 
+            element={
+              <ProtectedRoute>
+                <WalletPage />
+              </ProtectedRoute>
+            } 
+          />
+
+          <Route 
+            path="/categories"     // 👈 thêm route danh mục
+            element={
+              <ProtectedRoute>
+                <CategoryPage />
+              </ProtectedRoute>
+            } 
+          />
+
           <Route path="*" element={<Navigate to="/" />} />
-          <Route path="/transaction" element ={<TransactionPage/>}/>
-          <Route path="/wallets" element ={<WalletPage/>}/>'
         </Routes>
       </Router>
     </AuthProvider>
